@@ -1,178 +1,762 @@
-# Randomly creates (%) of missing data
-random_datalost = function(data, missing = 0.1){
-data_t = data[,-c(1,2)]
-data_t[sample(1:length(data_t), round(missing*length(data_t)), replace = FALSE)] <- "-"
-data = cbind(data[,c(1,2)],data_t)
-return(data)
+check_onemap = function(file, cross, nround){
+
+cross_ril = function(data){
+  data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+  n = ncol(data)
+  t = table(as.data.frame(t(data)))
+  if (length(t) == 4){
+  n1 = t[1,1]
+  n2 = t[1,2]
+  n3 = t[2,1]
+  n4 = t[2,2]
+  r = (n2+n3)/(2*(n1+n4))
+  } else if (length(t) == 2){
+    n1 = t[1]
+    n3 = t[2]
+    r = n3/(2*n1)
+  } else {r=0}
+  return(r)
 }
 
-# Test for presence of all marker types (IMPORTANT FOR OTHER FUNCTIONS)
-test_mtypes = function(data) {
-data_p = as.data.frame(data)
-lvls = matrix(levels(data_p[,2]))
-labels_test = matrix(c("A.1", "A.2", "A.3", "A.4", "B1.5", "B2.6", "B3.7", "C.8", "D1.10", "D1.11", "D1.12", "D1.13", "D1.9", "D2.14", "D2.15", "D2.16", "D2.17", "D2.18"),18,1)
-res = matrix(NA, 18, 1)
-for(i in 1:nrow(lvls)){
-  res[i] = isTRUE(lvls[i] == labels_test[i])
-}
-return(res)
-}
-
-# Transform data to Onemap/MapMaker pattern
-transform_data = function(data, nmarkers, individuals) {
-dat = data[,-c(1:5)]
-test = matrix(NA, nmarkers, individuals)
-k=1
-for (i in 1:ncol(test)){
-  test[,i] = paste0(dat[,k],dat[,k+1])
-  k = k+2
-}
-test = tolower(test)
-data = as.matrix(data)
-test = cbind(data[,1], test)
-return(test)
+cross_bc = function(data){
+  data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+  n = ncol(data)
+  t = table(as.data.frame(t(data)))
+  if (length(t) == 4){
+    n1 = t[1,1]
+    n2 = t[1,2]
+    n3 = t[2,1]
+    n4 = t[2,2]
+    r = (n2+n3)/(n1+n2+n3+n4)
+  } else if (length(t) == 2){
+    n1 = t[1]
+    n3 = t[2]
+    r = n3/(n1)
+  } else {r=0}
+  return(r)
 }
 
-# Randomize marker types
-randomize_marker_type = function(data, nmarkers, individuals, guide) {
-  markers = data[,1]
-  types = matrix(NA, nmarkers, 1)
-  dat = as.data.frame(t(data[,-1]))
-  #guide = sample(1:18, nmarkers, replace = T)
-  for(i in 1:ncol(dat)){
-  if  (guide[i] == 1) {
-  levels(dat[,i]) = c("ac", "ad", "bc", "bd") #A.1
-  types[i,] = paste0("A.1")}
-    else if (guide[i] == 2) {
-  levels(dat[,i]) = c("a", "ac", "ba", "bc") #A.2
-  types[i,] = paste0("A.2")}
-    else if (guide[i] == 3) {
-  levels(dat[,i]) = c("ac", "a", "bc", "b") #A.3
-  types[i,] = paste0("A.3")}
-    else if (guide[i] == 4) {
-  levels(dat[,i]) = c("ab", "a", "b", "o") #A.4
-  types[i,] = paste0("A.4")}
-    else if (guide[i] == 5) {
-  levels(dat[,i]) = c("ab", "a", "a", "b") #B1.5
-  types[i,] = paste0("B1.5")}
-    else if (guide[i] == 6) {
-  levels(dat[,i]) = c("ab", "a", "a", "b") #B2.6
-  types[i,] = paste0("B2.6")}
-    else if (guide[i] == 7) {
-  levels(dat[,i]) = c("a", "ab", "ab", "b") #B3.7
-  types[i,] = paste0("B3.7")}
-    else if (guide[i] == 8) {
-  levels(dat[,i]) = c("a", "a", "a", "o") #C.8
-  types[i,] = paste0("C.8")}
-    else if (guide[i] == 9) {
-  levels(dat[,i]) = c("ac", "ac", "bc", "bc") #D1.9
-  types[i,] = paste0("D1.9")}
-    else if (guide[i] == 10) {
-  levels(dat[,i]) = c("a", "a", "ab", "ab") #D1.10
-  types[i,] = paste0("D1.10")}
-    else if (guide[i] == 11) {
-  levels(dat[,i]) = c("a", "a", "b", "b") #D1.11
-  types[i,] = paste0("D1.11")}
-    else if (guide[i] == 12) {
-  levels(dat[,i]) = c("ab", "ab", "a", "a") #D1.12
-  types[i,] = paste0("D1.12")}
-    else if (guide[i] == 13) {
-  levels(dat[,i]) = c("a", "a", "o", "o") #D1.13
-  types[i,] = paste0("D1.13")}
-    else if (guide[i] == 14) {
-  levels(dat[,i]) = c("ac", "ac", "bc", "bc") #D2.14
-  types[i,] = paste0("D2.14")}
-    else if (guide[i] == 15) {
-  levels(dat[,i]) = c("a", "a", "ab", "ab") #D2.15
-  types[i,] = paste0("D2.15")}
-    else if (guide[i] == 16) {
-  levels(dat[,i]) = c("a", "a", "b", "b") #D2.16
-  types[i,] = paste0("D2.16")}
-    else if (guide[i] == 17) {
-  levels(dat[,i]) = c("ab", "ab", "a", "a") #D2.17
-  types[i,] = paste0("D2.17")}
-    else if (guide[i] == 18) {
-  levels(dat[,i]) = c("a", "a", "o", "o") #D2.18
-  types[i,] = paste0("D2.18")}
-  }
-markers = paste0("*", markers)
-data = cbind(markers,types, t(dat))
-#colnames(data) = seq(1, (ncol(data)), 1)
-fr1 = matrix(c("data", "type", "outcross", rep(NA, (ncol(data)-3))),1, ncol(data))
-fr2 = matrix(c(individuals, nmarkers, "0", "0", "0", rep(NA, (ncol(data)-5))), 1, ncol(data))
-ind = matrix(NA, 1, ncol(data))
-ind[,1:(ncol(ind)-2)] = seq(1, individuals, 1)
-data = rbind(fr1, fr2, ind, data)
-write.table(data, file = "data_output.raw", sep = " ", quote = F, row.names = F, col.names = F, na = "")
-data = data[-c(1,2,3),]
-return(data)
+### ML estimators with EM algorithm
+# All crosses and outputs (including linkage phases) follow Maliepaard el at. (1997) and Wu et al. (2002) 
+
+cross_1 = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[2,1]
+n4 = t[2,2]
+r1 = (n2 + n3)/n
+r2 = (n1 + n4)/n
+r = matrix(c(r1,r2,r1,r2),2,2)
+return(r)
 }
 
-## Transform to general marker types (A.1, B1.5, B2.6, B3.7, C.8, D1.10, D2.15)
-generalize_mtype = function(data_p){
-  data_t = as.data.frame(t(data_p[,-c(1,2)]))
-  
-  for(i in 1:nrow(data_p)){
-    if (data_p[i,2] == "A.2"){levels(data_t[,i]) = c("ac", "ad", "bc", "bd") #A.1 labels
-    }
-    else if (data_p[i,2] == "A.3"){levels(data_t[,i]) = c("ad", "ac", "bd", "bc") #A.1 labels
-    }
-    else if (data_p[i,2] == "A.4"){levels(data_t[,i]) = c("ad", "ac", "bc", "bd") #A.1 labels
-    }
-    else if (data_p[i,2] == "D1.9"){levels(data_t[,i]) = c("aa", "ab") #D1.10 labels
-    }
-    else if (data_p[i,2] == "D1.10"){levels(data_t[,i]) = c("aa", "ab") #D1.10 labels
-    }
-    else if (data_p[i,2] == "D1.11"){levels(data_t[,i]) = c("aa", "ab") #D1.10 labels
-    }
-    else if (data_p[i,2] == "D1.12"){levels(data_t[,i]) = c("ab", "aa") #D1.10 labels
-    }
-    else if (data_p[i,2] == "D1.13"){levels(data_t[,i]) = c("aa", "ab") #D1.10 labels
-    }
-    else if (data_p[i,2] == "D2.14"){levels(data_t[,i]) = c("aa", "ab") #D2.15 labels
-    }
-    else if (data_p[i,2] == "D2.15"){levels(data_t[,i]) = c("aa", "ab") #D2.15 labels
-    }
-    else if (data_p[i,2] == "D2.16"){levels(data_t[,i]) = c("aa", "ab") #D2.15 labels
-    }
-    else if (data_p[i,2] == "D2.17"){levels(data_t[,i]) = c("ab", "aa") #D2.15 labels
-    }
-    else if (data_p[i,2] == "D2.18"){levels(data_t[,i]) = c("aa", "ab") #D2.15 labels
-    }
-  }
+cross_2 = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[2,1]
+n5 = t[2,2]
+n6 = t[2,3]
+r1 = (n3 + n4)/(n1 + n3 + n4 + n6)
+r2 = (n1 + n6)/(n3 + n1 + n6 + n4)
+r = matrix(c(r1,r2,r1,r2),2,2)
+return(r)
+}
 
-# Changing marker labels  
-  for(i in 1:nrow(data_p)){
-    if (data_p[i,2] == "A.1"){data_p[i,2] = "A"}
-    else if (data_p[i,2] == "A.2"){data_p[i,2] = "A"}
-    else if (data_p[i,2] == "A.3"){data_p[i,2] = "A"}
-    else if (data_p[i,2] == "A.4"){data_p[i,2] = "A"}
-    else if (data_p[i,2] == "B1.5"){data_p[i,2] = "B1"}
-    else if (data_p[i,2] == "B2.6"){data_p[i,2] = "B2"}
-    else if (data_p[i,2] == "B3.7"){data_p[i,2] = "B3"}
-    else if (data_p[i,2] == "C.8"){data_p[i,2] = "C8"}
-    else if (data_p[i,2] == "D1.9"){data_p[i,2] = "D1"}
-    else if (data_p[i,2] == "D1.10"){data_p[i,2] = "D1"}
-    else if (data_p[i,2] == "D1.11"){data_p[i,2] = "D1"}
-    else if (data_p[i,2] == "D1.12"){data_p[i,2] = "D1"}
-    else if (data_p[i,2] == "D1.13"){data_p[i,2] = "D1"}
-    else if (data_p[i,2] == "D2.14"){data_p[i,2] = "D2"}
-    else if (data_p[i,2] == "D2.15"){data_p[i,2] = "D2"}
-    else if (data_p[i,2] == "D2.16"){data_p[i,2] = "D2"}
-    else if (data_p[i,2] == "D2.17"){data_p[i,2] = "D2"}
-    else if (data_p[i,2] == "D2.18"){data_p[i,2] = "D2"}
-  }
+cross_3a = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[1,4]
+n5 = t[2,1]
+n6 = t[2,2]
+n7 = t[2,3]
+n8 = t[2,4]
+r1 = (n3 + n4 + n5 + n6)/n
+r2 = (n1 + n2 + n7 + n8)/n
+r = matrix(c(r1,r2,r1,r2),2,2)
+return(r)
+}
 
-  data_p = cbind(data_p[,c(1,2)], t(data_t))
-  #data_p = as.data.frame(data_p)
-  #levels(data_p[,2]) = c("A", "A", "A", "A", "B1", "B2", "B3", "C8", "D1", "D1", "D1", "D1", "D1", "D2", "D2", "D2", "D2", "D2")
-  return(data_p)
+cross_3b = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[1,4]
+n5 = t[2,1]
+n6 = t[2,2]
+n7 = t[2,3]
+n8 = t[2,4]
+r1 = (n2 + n4 + n5 + n7)/n
+r2 = (n3 + n1 + n8 + n6)/n
+r = matrix(c(r1,r2,r1,r2),2,2)
+return(r)
+}
+
+cross_4 = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[2,1]
+n4 = t[2,2]
+
+# Calculating r1 using EM algorithm
+r = 1
+r1 = 0.5
+while (abs(r1 - r) > 0.0001){
+  r = r1
+  s = 1 - r
+r1 = (((n1*r)/(2-r)) + n2 + ((2*n3*r)/(1+r)))/n
+}
+
+# Calculating r2 using EM algorithm
+r = 1
+r2 = 0.5
+while (abs(r2 - r) > 0.0001){
+  r = r2
+  s = 1 - r
+r2 = (((n3*r)/(2-r)) + n4 + ((2*n1*r)/(1+r)))/n
+}
+
+r = matrix(c(r1,r2,r1,r2),2,2)
+return(r)
+}
+
+cross_5 = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[2,1]
+n5 = t[2,2]
+n6 = t[2,3]
+
+r1 = (n2 + n3 + n4)/n
+r2 = (n5 + n6 + n1)/n
+r = matrix(c(r1,r2,r1,r2),2,2)
+return(r)
+}
+
+cross_6 = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[2,1]
+n5 = t[2,2]
+n6 = t[2,3]
+
+r1 = (n3 + n5)/(n2 + n3 + n5 + n6)
+r2 = (n2 + n6)/(n3 + n2 + n6 + n5)
+r = matrix(c(r1,r2,r1,r2),2,2)
+return(r)
+}
+
+cross_7 = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[2,1]
+n5 = t[2,2]
+n6 = t[2,3]
+n7 = t[3,1]
+n8 = t[3,2]
+n9 = t[3,3]
+
+# Calculating r1 using EM algorithm
+r = 1
+r1 = 0.5
+while (abs(r1 - r) > 0.001){
+r = r1
+s = 1 - r
+r1 = ((n2 + n4 + n6 + n8 + 2*(n3 + n7) + ((2 * n5 * (r^2)))/(1 - (2 * r * s))))/(2 * n)
+}
+
+# Calculating r2 and r3
+r2 = (0.5 - sqrt((0.25 - ((n1 + n3 + n5 + n7 + n9)/(2 * n)))))
+r3 = r2
+
+# Calculating r4 using EM algorithm
+r = 1
+r4 = 0.5
+while (abs(r4 - r) > 0.001){
+r = r4
+s = 1 - r
+r4 = ((n2 + n4 + n6 + n8 + 2*(n1 + n9) + ((2 * n5 * (r^2)))/(1 - (2 * r * s))))/(2 * n)
+}
+
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
+}
+
+cross_8 = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[1,4]
+n5 = t[2,1]
+n6 = t[2,2]
+n7 = t[2,3]
+n8 = t[2,4]
+n9 = t[3,1]
+n10 = t[3,2]
+n11 = t[3,3]
+n12 = t[3,4]
+
+# Calculating r1 using EM algorithm
+r = 1
+r1 = 0.5
+while (abs(r1 - r) > 0.0001){
+r = r1
+s = 1 - r
+r1 = (n2 + n3 + n5 + n8 + n10 + n11 + 2*(n4 + n9) + (2*(n6 + n7)*(r^2)/(1 - (2*r*s))))/(2*n)
+}
+
+# Calculating r2 using EM algorithm
+r = 1
+r2 = 0.5
+while (abs(r2 - r) > 0.0001){
+r = r2
+s = 1 - r
+r2 = (n1 + n4 + n6 + n7 + n9 + n12 + 2*(n3 + n10) + (2*(n5 + n8)*(r^2)/(1 - (2*r*s))))/(2*n)
+}
+
+# Calculating r3 using EM algorithm
+r = 1
+r3 = 0.5
+while (abs(r3 - r) > 0.0001){
+r = r3
+s = 1 - r
+r3 = (n4 + n1 + n7 + n6 + n12 + n9 + 2*(n2 + n11) + (2*(n8 + n5)*(r^2)/(1 - (2*r*s))))/(2*n)
+}
+
+# Calculating r4 using EM algorithm
+r = 1
+r4 = 0.5
+while (abs(r4 - r) > 0.0001){
+r = r4
+s = 1 - r
+r4 = (n2 + n3 + n5 + n8 + n10 + n11 + 2*(n1 + n12) + (2*(n6 + n7)*(r^2)/(1 - (2*r*s))))/(2*n)
+}
+
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
+}
+
+cross_9 = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[2,1]
+n4 = t[2,2]
+n5 = t[3,1]
+n6 = t[3,2]
+
+# Calculating r1 using EM algorithm
+r = 1
+r1 = 0.5
+while (abs(r1 - r) > 0.0001){
+r = r1
+s = 1 - r
+r1 = (((2* n1 * r)/(1 + r)) + (2 * n2) + ((n3 * r * (1 + r))/(1 - (r*s))) + n4 + ((2 * n5)/(2 - r)))/(2*n)
+}
+
+# Calculating r2 and r3 using EM algorithm
+r = 1
+r2 = 0.5
+while (abs(r2 - r) > 0.0001){
+r = r2
+s = 1 - r
+r2 = (((n1 + n5) * r * (1 + r))/(1 - r*s) + n2 + n6 + (2 * n3 * ((1 - s^2))/(1 + 2*r*s)) + ((2 * n4 * r^2)/(1 - (2*r*s))))/(2*n)
+}
+
+r3 = r2
+
+# Calculating r4 using EM algorithm
+r = 1
+r4 = 0.5
+while (abs(r4 - r) > 0.0001){
+r = r4
+s = 1 - r
+r4 = (((2* n5 * r)/(1 + r)) + (2 * n6) + ((n3 * r * (1 + r))/(1 - (r*s))) + n4 + ((2 * n1)/(2 - r)))/(2*n)
+}
+
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
+}
+
+cross_10a = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[2,1]
+n5 = t[2,2]
+n6 = t[2,3]
+n7 = t[3,1]
+n8 = t[3,2]
+n9 = t[3,3]
+
+# Calculating r1 using EM algorithm
+r = 1
+r1 = 0.5
+while (abs(r1 - r) > 0.0001){
+r = r1
+s = 1 - r
+r1 = (((n1 + (2 * n4))*r) + n2 + n6 + n8 + (2 * n3) + ((2 * n5 * r^2)/(1 - (2*r*s))) + (n7 *(1 + r)))/(2*n)
+}
+
+# Calculating r2 using EM algorithm
+r = 1
+r2 = 0.5
+while (abs(r2 - r) > 0.0001){
+r = r2
+s = 1 - r
+r2 = (((n1 + (2 * n4))*r) + n3 + n5 + n9 + (2 * n2) + ((2 * n6 * r^2)/(1 - (2*r*s))) + (n7 *(1 + r)))/(2*n)
+}
+
+# Calculating r3 using EM algorithm
+r = 1
+r3 = 0.5
+while (abs(r3 - r) > 0.0001){
+r = r3
+s = 1 - r
+r3 = (((n7 + (2 * n4))*r) + n9 + n5 + n3 + (2 * n8) + ((2 * n6 * r^2)/(1 - (2*r*s))) + (n1 *(1 + r)))/(2*n)
+}
+
+# Calculating r4 using EM algorithm
+r = 1
+r4 = 0.5
+while (abs(r4 - r) > 0.0001){
+r = r4
+s = 1 - r
+r4 = (((n7 + (2 * n4))*r) + n2 + n6 + n8 + (2 * n9) + ((2 * n5 * r^2)/(1 - (2*r*s))) + (n1 *(1 + r)))/(2*n)
+}
+
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
+}
+
+cross_10b = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[2,1]
+n5 = t[2,2]
+n6 = t[2,3]
+n7 = t[3,1]
+n8 = t[3,2]
+n9 = t[3,3]
+
+# Calculating r1 using EM algorithm
+r = 1
+r1 = 0.5
+while (abs(r1 - r) > 0.0001){
+r = r1
+s = 1 - r
+r1 = (((n1 + (2 * n4))*r) + n2 + n6 + n8 + (2 * n3) + ((2 * n5 * r^2)/(1 - (2*r*s))) + (n7 *(1 + r)))/(2*n)
+}
+
+# Calculating r2 using EM algorithm
+r = 1
+r2 = 0.5
+while (abs(r2 - r) > 0.0001){
+r = r2
+s = 1 - r
+r2 = (((n7 + (2 * n4))*r) + n9 + n5 + n3 + (2 * n8) + ((2 * n6 * r^2)/(1 - (2*r*s))) + (n1 *(1 + r)))/(2*n)
+}
+
+# Calculating r3 using EM algorithm
+r = 1
+r3 = 0.5
+while (abs(r3 - r) > 0.0001){
+r = r3
+s = 1 - r
+r3 = (((n1 + (2 * n4))*r) + n3 + n5 + n9 + (2 * n2) + ((2 * n6 * r^2)/(1 - (2*r*s))) + (n7 *(1 + r)))/(2*n)
+}
+
+# Calculating r4 using EM algorithm
+r = 1
+r4 = 0.5
+while (abs(r4 - r) > 0.0001){
+r = r4
+s = 1 - r
+r4 = (((n7 + (2 * n4))*r) + n2 + n6 + n8 + (2 * n9) + ((2 * n5 * r^2)/(1 - (2*r*s))) + (n1 *(1 + r)))/(2*n)
+}
+
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
+}
+
+cross_11 = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[1,4]
+n5 = t[2,1]
+n6 = t[2,2]
+n7 = t[2,3]
+n8 = t[2,4]
+n9 = t[3,1]
+n10 = t[3,2]
+n11 = t[3,3]
+n12 = t[3,4]
+n13 = t[4,1]
+n14 = t[4,2]
+n15 = t[4,3]
+n16 = t[4,4]
+
+r1 = (n2 + n3 + n5 + n8 + n9 + n12 + n14 + n15 + 2*(n4 + n7 + n10 + n13))/(2*n)
+r2 = (n1 + n4 + n6 + n7 + n10 + n11 + n13 + n16 + 2*(n3 + n8 + n9 + n14))/(2*n)
+r3 = (n4 + n1 + n7 + n6 + n11 + n10 + n16 + n13 + 2*(n2 + n5 + n12 + n15))/(2*n)
+r4 = (n2 + n3 + n5 + n8 + n9 + n12 + n14 + n15 + 2*(n1 + n6 + n11 + n16))/(2*n)
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
+}
+
+cross_12 = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[2,1]
+n4 = t[2,2]
+n5 = t[3,1]
+n6 = t[3,2]
+n7 = t[4,1]
+n8 = t[4,2]
+
+# Calculating r1 using EM algorithm
+r = 1
+r1 = 0.5
+while (abs(r1 - r) > 0.0001){
+  r = r1
+  s = 1 - r
+r1 = (((2 * n1 * r)/(1 + r)) + (2 * n2) + (((n3 + n5) * r * (1 + r))/(1 - r*s)) + n4 + n6 + ((2 * n7)/(2 - r)))/(2*n)
+}
+
+# Calculating r2 using EM algorithm
+r = 1
+r2 = 0.5
+while (abs(r2 - r) > 0.0001){
+  r = r2
+  s = 1 - r
+r2 = (((2 * n3 * r)/(1 + r)) + (2 * n4) + (((n1 + n7) * r * (1 + r))/(1 - r*s)) + n2 + n8 + ((2 * n5)/(2 - r)))/(2*n)
+}
+
+# Calculating r3 using EM algorithm
+r = 1
+r3 = 0.5
+while (abs(r3 - r) > 0.0001){
+  r = r3
+  s = 1 - r
+r3 = (((2 * n5 * r)/(1 + r)) + (2 * n6) + (((n7 + n1) * r * (1 + r))/(1 - r*s)) + n8 + n2 + ((2 * n3)/(2 - r)))/(2*n)
+}
+
+# Calculating r4 using EM algorithm
+r = 1
+r4 = 0.5
+while (abs(r4 - r) > 0.0001){
+  r = r4
+  s = 1 - r
+r4 = (((2 * n7 * r)/(1 + r)) + (2 * n8) + (((n3 + n5) * r * (1 + r))/(1 - r*s)) + n4 + n6 + ((2 * n1)/(2 - r)))/(2*n)
+}
+
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
+}
+
+cross_13a = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[2,1]
+n5 = t[2,2]
+n6 = t[2,3]
+n7 = t[3,1]
+n8 = t[3,2]
+n9 = t[3,3]
+n10 = t[4,1]
+n11 = t[4,2]
+n12 = t[4,3]
+
+r1 = (n2 + n6 + n7 + n9 + n10 + n11 + 2*(n3 + n5))/(n1 + n4 + n7 + n10 + 2*(n2 + n3 + n5 + n6 + n8 + n9 + n11 + n12))
+r2 = (n3 + n5 + n7 + n8 + n10 + n12 + 2*(n2 + n6))/(n1 + n4 + n7 + n10 + 2*(n3 + n2 + n6 + n5 + n9 + n8 + n12 + n11))
+r3 = (n8 + n12 + n1 + n3 + n4 + n5 + 2*(n9 + n11))/(n7 + n10 + n1 + n4 + 2*(n8 + n9 + n11 + n12 + n2 + n3 + n5 + n6))
+r4 = (n2 + n6 + n4 + n9 + n1 + n11 + 2*(n12 + n8))/(n10 + n7 + n4 + n1 + 2*(n2 + n12 + n8 + n6 + n5 + n9 + n11 + n3))
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
+}
+
+cross_13b = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[2,1]
+n5 = t[2,2]
+n6 = t[2,3]
+n7 = t[3,1]
+n8 = t[3,2]
+n9 = t[3,3]
+n10 = t[4,1]
+n11 = t[4,2]
+n12 = t[4,3]
+
+r1 = (n2 + n6 + n4 + n9 + n10 + n11 + 2*(n3 + n8))/(n1 + n7 + n4 + n10 + 2*(n2 + n3 + n8 + n6 + n5 + n9 + n11 + n12))
+r2 = (n8 + n3 + n7 + n12 + n1 + n5 + 2*(n6 + n11))/(n10 + n4 + n7 + n1 + 2*(n8 + n6 + n11 + n3 + n2 + n12 + n5 + n9))
+r3 = (n3 + n8 + n4 + n5 + n10 + n12 + 2*(n2 + n9))/(n1 + n7 + n4 + n10 + 2*(n3 + n2 + n9 + n8 + n6 + n5 + n12 + n11))
+r4 = (n2 + n6 + n7 + n9 + n1 + n11 + 2*(n12 + n5))/(n10 + n4 + n7 + n1 + 2*(n2 + n12 + n5 + n6 + n8 + n9 + n11 + n3))
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
+}
+
+cross_14 = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[2,1]
+n4 = t[2,2]
+
+theta = ((n1 - 2*(n2 + n3) - n4)/(2*n)) + sqrt((((n1 - 2*(n2 + n3) - n4)^2)/((2*n)^2)) + ((2 * n4)/n))
+r1 = 1 - sqrt(theta)
+r2 = 0.5 - sqrt(0.25 - theta)
+r3 = r2
+r4 = sqrt(theta)
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
+}
+
+cross_15a = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[2,1]
+n5 = t[2,2]
+n6 = t[2,3]
+
+# Calculating r1 using EM algorithm
+r = 1
+r1 = 0.5
+while (abs(r1 - r) > 0.0001){
+r = r1
+s = 1 - r
+r1 = (((n1 * r * (3 - r))/(2 - r)) + ((n2 * r * (1 + r))/(1 - r*s)) + ((2 * n3)/(2 - r)) + (n4 * (1 + r)) + n5)/(2*n)
+}
+
+# Calculating r2 using EM algorithm
+r = 1
+r2 = 0.5
+while (abs(r2 - r) > 0.0001){
+r = r2
+s = 1 - r
+r2 = (((n1 * r * (3 - r))/(2 - r)) + ((n3 * r * (1 + r))/(1 - r*s)) + ((2 * n2)/(2 - r)) + (n4 * (1 + r)) + n5)/(2*n)
+}
+
+# Calculating r3 using EM algorithm
+r = 1
+r3 = 0.5
+while (abs(r3 - r) > 0.0001){
+r = r3
+s = 1 - r
+r3 = ((((n1 * r * (3 + r))/(1 + r)) + ((2 * n2 * r)/(1 + r)) + ((n3 * r * (1 + r))/(1 - r*s)) + (n4 * r) + (2 * n5) + n6))/(2*n)
+}
+
+# Calculating r4 using EM algorithm
+r = 1
+r4 = 0.5
+while (abs(r4 - r) > 0.0001){
+r = r4
+s = 1 - r
+r4 = ((((n1 * r * (3 + r))/(1 + r)) + ((2 * n3 * r)/(1 + r)) + ((n2 * r * (1 + r))/(1 - r*s)) + (n4 * r) + (2 * n6) + n5))/(2*n)
+}
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
+}
+
+cross_15b = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[2,1]
+n5 = t[2,2]
+n6 = t[2,3]
+
+# Calculating r1 using EM algorithm
+r = 1
+r1 = 0.5
+while (abs(r1 - r) > 0.0001){
+r = r1
+s = 1 - r
+r1 = (((n1 * r * (3 - r))/(2 - r)) + ((n2 * r * (1 + r))/(1 - r*s)) + ((2 * n3)/(2 - r)) + (n4 * (1 + r)) + n5)/(2*n)
+}
+
+# Calculating r2 using EM algorithm
+r = 1
+r2 = 0.5
+while (abs(r2 - r) > 0.0001){
+r = r2
+s = 1 - r
+r2 = (((n1 * r * (3 + r))/(1 + r)) + ((2 * n2 * r)/(1 + r)) + ((n3 * r * (1 + r))/(1 - r*s)) + (n4 * r) + (2 * n5) + n6)/(2*n)
+}
+
+# Calculating r3 using EM algorithm
+r = 1
+r3 = 0.5
+while (abs(r3 - r) > 0.0001){
+r = r3
+s = 1 - r
+r3 = (((n1 * r * (3 - r))/(2 - r)) + ((n3 * r * (1 + r))/(1 - r*s)) + ((2 * n2)/(2 - r)) + (n4 * (1 + r)) + n5)/(2*n)
+}
+
+# Calculating r4 using EM algorithm
+r = 1
+r4 = 0.5
+while (abs(r4 - r) > 0.0001){
+r = r4
+s = 1 - r
+r4 = (((n1 * r * (3 + r))/(1 + r)) + ((2 * n3 * r)/(1 + r)) + ((n2 * r * (1 + r))/(1 - r*s)) + (n4 * r) + (2 * n6) + n5)/(2*n)
+}
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
+}
+
+cross_16a = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[2,1]
+n5 = t[2,2]
+n6 = t[2,3]
+n7 = t[3,1]
+n8 = t[3,2]
+n9 = t[3,3]
+
+r1 = (n2 + n3 +n4 + n6 + n7 + n8)/(n1 + n2 + n3 + n4 + n7 + 2*(n5 + n6 + n8 + n9))
+r2 = (n2 + n3 +n4 + n5 + n7 + n8)/(n1 + n2 + n3 + n4 + n7 + 2*(n6 + n5 + n8 + n9))
+r3  = (n1 + n5 + n9 + 2*(n6 + n8))/(n1 + n2 + n3 + n4 + n7 + 2*(n5 + n6 + n8 + n9))
+r4  = (n1 + n6 + n8 + 2*(n5 + n9))/(n1 + n2 + n3 + n4 + n7 + 2*(n6 + n5 + n8 + n9))
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
+}
+
+cross_16b = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[2,1]
+n5 = t[2,2]
+n6 = t[2,3]
+n7 = t[3,1]
+n8 = t[3,2]
+n9 = t[3,3]
+
+r1 = (n2 + n3 +n4 + n6 + n7 + n8)/(n1 + n2 + n3 + n4 + n7 + 2*(n5 + n6 + n8 + n9))
+r2  = (n1 + n5 + n9 + 2*(n6 + n8))/(n1 + n2 + n3 + n4 + n7 + 2*(n5 + n6 + n8 + n9))
+r3 = (n2 + n3 +n4 + n5 + n7 + n8)/(n1 + n2 + n3 + n4 + n7 + 2*(n6 + n5 + n8 + n9))
+r4  = (n1 + n6 + n8 + 2*(n5 + n9))/(n1 + n2 + n3 + n4 + n7 + 2*(n6 + n5 + n9 + n8))
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
+}
+
+cross_17 = function(data){
+data = data[,!((data[1,] == "-") | (data[2,] == "-"))]
+n = ncol(data)
+t = table(as.data.frame(t(data)))
+
+n1 = t[1,1]
+n2 = t[1,2]
+n3 = t[1,3]
+n4 = t[2,1]
+n5 = t[2,2]
+n6 = t[2,3]
+n7 = t[3,1]
+n8 = t[3,2]
+n9 = t[3,3]
+
+r1 = (n3 + n6 + n7 + n8 + (2 * n5))/(n2 + n3 + n4 + n7 + 2*(n5 + n6 + n8 + n9))
+r2 = (n3 + n9 + n4 + n5 + (2 * n8))/(n2 + n3 + n7 + n4 + 2*(n8 + n9 + n5 + n6))
+r3 = (n2 + n5 + n7 + n9 + (2 * n6))/(n3 + n2 + n4 + n7 + 2*(n6 + n5 + n9 + n8))
+r4 = (n2 + n6 + n4 + n8 + (2 * n9))/(n3 + n2 + n7 + n4 + 2*(n9 + n6 + n8 + n5))
+r = matrix(c(r1,r2,r3,r4),2,2)
+return(r)
 }
 
 # Estimating recombination frequency between all markers
-rf_estimate = function(data_p, nmarkers, nround = 6){
-source("cross_types.R")
-data_p = as.matrix(data_p)
+rf_estimate = function(data, cross, nmarkers, nround = 6){
+  data_p = as.matrix(data)
+  
+if (cross == "outcross"){
 
 # Creating list for results
 CC <- matrix(NA,nmarkers,nmarkers)
@@ -534,4 +1118,55 @@ for(i in 1:(nrow(data_p)-1)){
 }
 analysis.check[] <- lapply(analysis.check,round,nround)
 return(analysis.check)
+
+} else {
+
+  # Creating list for results
+  CC <- matrix(NA,nmarkers,nmarkers) 
+  rownames(CC) <- colnames(CC) <- data[,1] # substr(as.vector(data_p[,1]),2,4)
+  analysis.check <- list()
+  analysis.check$'CC' <- CC
+
+  if (cross == "ril"){
+  for(i in 1:(nrow(data_p)-1)){
+    for (j in (i+1):nrow(data_p)){
+        outp = cross_ril(data_p[c(i,j),-c(1,2)])
+        analysis.check[[1]][i,j] <- analysis.check[[1]][j,i] <- outp
+   }
+  }
+  } else if (cross == "bc"){
+    for(i in 1:(nrow(data_p)-1)){
+      for (j in (i+1):nrow(data_p)){
+        outp = cross_bc(data_p[c(i,j),-c(1,2)])
+        analysis.check[[1]][i,j] <- analysis.check[[1]][j,i] <- outp
+      }
+    }
+  }
+
+  analysis.check[] <- lapply(analysis.check,round,nround)
+  return(analysis.check)
+}
+}
+
+# Reading .raw file
+data = read.table(file, skip = 3) # Only considering Onemap files
+data = as.matrix(data)
+nmarkers = nrow(data)
+
+check_twopts = rf_estimate(data, cross, nmarkers, nround)
+check_twopts$CC[which(check_twopts$CC > 0.5)] <- 0.5
+check_twopts$CC[which(is.na(check_twopts$CC))] <- 0
+
+if (cross == "outcross"){
+  onemap_data = onemap::read_onemap(inputfile = file)
+  twopts = onemap::rf_2pts(onemap_data, LOD = suggest_lod(onemap_data), max.rf = 0.5)
+  check_twopts$'DIFF' <- round(twopts$analysis$CC - check_twopts$CC, nround)
+} else {
+onemap_data = onemap::read_onemap(inputfile = file)
+twopts = onemap::rf_2pts(onemap_data, LOD = suggest_lod(onemap_data), max.rf = 0.5)
+check_twopts$'DIFF' <- round(twopts$analysis - check_twopts$CC, nround)
+}
+
+return(check_twopts)
+
 }

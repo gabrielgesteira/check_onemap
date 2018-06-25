@@ -767,6 +767,9 @@ analysis.check$'CR' <- CC
 analysis.check$'RC' <- CC
 analysis.check$'RR' <- CC
 
+# Correcting marker type
+data_p[,2] = gsub("\\..*","",data_p[,2])
+
 for(i in 1:(nrow(data_p)-1)){
   for (j in (i+1):nrow(data_p)){
     if (data_p[i,2] == "A" & data_p[j,2] == "A"){
@@ -1153,18 +1156,23 @@ data = read.table(file, skip = 3) # Only considering Onemap files
 data = as.matrix(data)
 nmarkers = nrow(data)
 
+# Estimating recombination frequency outside onemap
 check_twopts = rf_estimate(data, cross, nmarkers, nround)
+
+# Correcting rf missing values and those bigger than 0.5
 check_twopts$CC[which(check_twopts$CC > 0.5)] <- 0.5
 check_twopts$CC[which(is.na(check_twopts$CC))] <- 0
 
 if (cross == "outcross"){
   onemap_data = onemap::read_onemap(inputfile = file)
-  twopts = onemap::rf_2pts(onemap_data, LOD = suggest_lod(onemap_data), max.rf = 0.5)
+  twopts = onemap::rf_2pts(onemap_data, LOD = onemap::suggest_lod(onemap_data), max.rf = 0.5)
   check_twopts$'DIFF' <- round(twopts$analysis$CC - check_twopts$CC, nround)
+  cat("Done! Obs: D1 x D2 crosses generate warning messages.")
 } else {
 onemap_data = onemap::read_onemap(inputfile = file)
-twopts = onemap::rf_2pts(onemap_data, LOD = suggest_lod(onemap_data), max.rf = 0.5)
+twopts = onemap::rf_2pts(onemap_data, LOD = onemap::suggest_lod(onemap_data), max.rf = 0.5)
 check_twopts$'DIFF' <- round(twopts$analysis - check_twopts$CC, nround)
+cat("Done!")
 }
 
 return(check_twopts)
